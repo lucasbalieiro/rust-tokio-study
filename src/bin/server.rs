@@ -18,7 +18,10 @@ async fn main() {
     let db = Arc::new(Mutex::new(HashMap::new()));
 
     loop {
-        let (socket, _) = listener.accept().await.unwrap();
+        let (socket, socket_addr) = listener.accept().await.unwrap();
+        let db = db.clone();
+
+        println!("Accepted: {:?}", socket_addr);
         tokio::spawn(async move {
             process(socket, db).await;
         });
@@ -36,7 +39,7 @@ async fn process(socket: TcpStream, db: Db) {
                 Frame::Simple("OK".to_string())
             }
             Get(cmd) => {
-                let mut db = db.lock().unwrap();
+                let db = db.lock().unwrap();
                 if let Some(value) = db.get(cmd.key()) {
                     Frame::Bulk(value.clone().into())
                 } else {
